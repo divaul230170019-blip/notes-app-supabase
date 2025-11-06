@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <title>Login Supabase</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #FFF9D6;
+      height: 100vh;
+
+      /* ✅ posisi ke tengah */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-box {
+      background: #FFF3B0;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #D1C18A;
+      background: #FFF9D6;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #F5D061;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #EAC24F;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-box">
+    <h2>Login / Register</h2>
+
+    <input id="email" placeholder="email">
+    <input id="password" type="password" placeholder="password">
+
+    <button id="btn-login">Login</button>
+    <button id="btn-register">Register</button>
+  </div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://ijcfzawvwmonssujnksp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY2Z6YXd2d21vbnNzdWpua3NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTgzNDIsImV4cCI6MjA3NzQ3NDM0Mn0.AQGYCWbxZrE3wP7O8O1i8Ur81iWt2AeUAY7nZtMTdwM";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+// REGISTER
+document.getElementById("btn-register").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
+  const { error } = await supabase.auth.signUp({ email, password: pass });
+  if (error) alert(error.message);
+  else alert("Akun berhasil dibuat! Silakan login.");
+};
+
+// LOGIN
+document.getElementById("btn-login").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("password").value;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  if (error) alert(error.message);
+  else window.location.href = "dashboard.html";
+};
+</script>
+
+</body>
+</html>

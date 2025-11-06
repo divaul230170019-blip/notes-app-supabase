@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #FFF8D6; /* kuning pastel */
+    padding: 20px;
+    color: #5a4b2e;
+  }
+
+  h2, h3 {
+    color: #5a4b2e;
+  }
+
+  input, textarea {
+    width: 100%;
+    max-width: 600px;
+    padding: 10px;
+    border: 1px solid #F4C361;
+    border-radius: 8px;
+    background: #FFF3C4;
+    margin-top: 5px;
+    box-sizing: border-box;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #F1B84B;
+    background: #FFEFBA;
+  }
+
+  button {
+    padding: 10px 18px;
+    background: #F9D97B;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 8px;
+    color: #5a4b2e;
+    font-weight: bold;
+    transition: 0.25s;
+    box-shadow: 0px 3px 6px rgba(0,0,0,0.12);
+  }
+
+  button:hover {
+    background: #F4C361;
+  }
+
+  .note-box {
+    background: #FFEAA7;
+    border: 1px solid #F4C361;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0px 3px 6px rgba(0,0,0,0.08);
+  }
+
+  a {
+    color: #b8860b;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  #logout {
+    background: #F4C361;
+  }
+
+  #logout:hover {
+    background: #F1B84B;
+  }
+
+  /* tombol berbahaya */
+  .danger {
+    background: #ffadad !important;
+    color: #5a0000 !important;
+  }
+
+  .danger:hover {
+    background: #ff9b9b !important;
+  }
+</style>
+
+  <meta charset="utf-8"/>
+  <title>Profil Kamu</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input { padding: 6px; width: 250px; }
+    button { margin-top: 10px; padding: 6px 14px; }
+  </style>
+</head>
+
+<body>
+  <h2>Profil Kamu</h2>
+  <p id="email-info">Memuat...</p>
+
+  <h3>Update Email</h3>
+  <input id="new-email" placeholder="Email baru..."><br>
+  <button id="btn-update-email">Update Email</button>
+
+  <h3>Update Password</h3>
+  <input id="new-pass" type="password" placeholder="Password baru..."><br>
+  <button id="btn-update-pass">Update Password</button>
+
+  <h3>Hapus Akun</h3>
+  <button style="background:red;color:white" id="btn-delete">Hapus Akun</button>
+
+  <br><br>
+  <a href="dashboard.html">Kembali ke Dashboard</a>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://ijcfzawvwmonssujnksp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY2Z6YXd2d21vbnNzdWpua3NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTgzNDIsImV4cCI6MjA3NzQ3NDM0Mn0.AQGYCWbxZrE3wP7O8O1i8Ur81iWt2AeUAY7nZtMTdwM";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true } });
+
+async function loadProfile() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    alert("Kesalahan memuat sesi.");
+    return;
+  }
+
+  const session = data.session;
+  const user = session?.user;
+
+  if (!user) {
+    document.getElementById("email-info").innerText = "Tidak ada user aktif.";
+    setTimeout(() => window.location.href = "index.html", 1500);
+    return;
+  }
+
+  document.getElementById("email-info").innerText = "Email: " + user.email;
+
+  // Update Email
+  document.getElementById("btn-update-email").onclick = async () => {
+    const newEmail = document.getElementById("new-email").value;
+    if (!newEmail) return alert("Masukkan email baru!");
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) alert(error.message);
+    else alert("Email berhasil diubah! Cek email verifikasi.");
+  };
+
+  // Update Password
+  document.getElementById("btn-update-pass").onclick = async () => {
+    const newPass = document.getElementById("new-pass").value;
+    if (!newPass) return alert("Masukkan password baru!");
+    const { error } = await supabase.auth.updateUser({ password: newPass });
+    if (error) alert(error.message);
+    else alert("Password berhasil diperbarui!");
+  };
+
+  // Hapus akun (dinonaktifkan — hanya signOut)
+  document.getElementById("btn-delete").onclick = async () => {
+    alert("Fitur hapus akun belum diaktifkan.");
+  };
+}
+
+loadProfile();
+</script>
+</body>
+</html>

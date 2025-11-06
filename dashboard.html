@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #FFF8D6; /* kuning pastel */
+    padding: 20px;
+    color: #5a4b2e;
+  }
+
+  h2, h3 {
+    color: #5a4b2e;
+  }
+
+  input, textarea {
+    width: 100%;
+    max-width: 600px;
+    padding: 10px;
+    border: 1px solid #F4C361;
+    border-radius: 8px;
+    background: #FFF3C4;
+    margin-top: 5px;
+    box-sizing: border-box;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #F1B84B;
+    background: #FFEFBA;
+  }
+
+  button {
+    padding: 10px 18px;
+    background: #F9D97B;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 8px;
+    color: #5a4b2e;
+    font-weight: bold;
+    transition: 0.25s;
+    box-shadow: 0px 3px 6px rgba(0,0,0,0.12);
+  }
+
+  button:hover {
+    background: #F4C361;
+  }
+
+  .note-box {
+    background: #FFEAA7;
+    border: 1px solid #F4C361;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0px 3px 6px rgba(0,0,0,0.08);
+  }
+
+  a {
+    color: #b8860b;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  #logout {
+    background: #F4C361;
+  }
+
+  #logout:hover {
+    background: #F1B84B;
+  }
+
+  /* tombol berbahaya */
+  .danger {
+    background: #ffadad !important;
+    color: #5a0000 !important;
+  }
+
+  .danger:hover {
+    background: #ff9b9b !important;
+  }
+</style>
+
+  <meta charset="utf-8"/>
+  <title>Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .note-box {
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+    #notes { margin-top: 10px; }
+    input, textarea { width: 100%; max-width: 600px; padding: 8px; box-sizing: border-box; }
+    button { margin-top: 6px; padding: 6px 10px; }
+  </style>
+</head>
+
+<body>
+  <h2>Dashboard</h2>
+  <p id="info">Memuat...</p>
+
+  <h3>Tambah Catatan Baru</h3>
+  <input id="new-title" placeholder="Judul catatan"><br><br>
+  <textarea id="new-body" placeholder="Isi catatan"></textarea><br><br>
+  <button id="btn-add">Simpan Catatan</button>
+
+  <hr>
+
+  <h3>Catatan Kamu:</h3>
+  <div id="notes">Memuat...</div>
+
+  <br>
+  <a href="profile.html">Pengaturan Profil</a> &nbsp; 
+  <button id="logout">Logout</button>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://ijcfzawvwmonssujnksp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqY2Z6YXd2d21vbnNzdWpua3NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTgzNDIsImV4cCI6MjA3NzQ3NDM0Mn0.AQGYCWbxZrE3wP7O8O1i8Ur81iWt2AeUAY7nZtMTdwM";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true } });
+
+// Ambil session dan user
+const { data: { session } } = await supabase.auth.getSession();
+const user = session?.user;
+
+if (!user) {
+  // jika belum login -> redirect ke login
+  window.location.href = "index.html";
+}
+
+// tampilkan email user
+document.getElementById("info").innerText = "Login sebagai: " + user.email;
+
+// load notes milik user
+async function loadNotes() {
+  const container = document.getElementById("notes");
+  container.innerHTML = "Memuat...";
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    container.innerHTML = "Gagal mengambil data.";
+    console.log(error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "Belum ada catatan.";
+    return;
+  }
+
+  container.innerHTML = "";
+  data.forEach(note => {
+    container.innerHTML += `
+      <div class="note-box">
+        <b>${escapeHtml(note.title)}</b><br>
+        ${escapeHtml(note.body || "")}<br><br>
+
+        <button onclick="editNote('${note.id}', \`${escapeJs(note.title)}\`, \`${escapeJs(note.body||'')}\`)">Edit</button>
+        <button onclick="deleteNote('${note.id}')">Hapus</button>
+      </div>
+    `;
+  });
+}
+
+// helper: simple escape untuk HTML injection prevention in UI
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+// helper: escape for template literal passing to edit prompt (keamanan ringan)
+function escapeJs(str) {
+  if (!str) return "";
+  return String(str).replaceAll('`', '\\`').replaceAll('\\', '\\\\');
+}
+
+// panggil loadNotes
+await loadNotes();
+
+// tambah note tanpa reload halaman
+document.getElementById("btn-add").onclick = async () => {
+  const title = document.getElementById("new-title").value.trim();
+  const body = document.getElementById("new-body").value.trim();
+
+  if (!title) return alert("Judul wajib diisi!");
+
+  const { error } = await supabase
+    .from("notes")
+    .insert([{ user_id: user.id, title, body }]);
+
+  if (error) {
+    alert("Gagal: " + error.message);
+    console.log(error);
+  } else {
+    document.getElementById("new-title").value = "";
+    document.getElementById("new-body").value = "";
+    await loadNotes();
+  }
+};
+
+// DELETE function (exposed to window so inline onclick can call it)
+window.deleteNote = async (id) => {
+  if (!confirm("Hapus catatan ini?")) return;
+  const { error } = await supabase.from("notes").delete().eq("id", id);
+  if (error) alert("Gagal menghapus: " + error.message);
+  else await loadNotes();
+};
+
+// EDIT function (uses prompt for simplicity)
+window.editNote = async (id, oldTitle, oldBody) => {
+  const newTitle = prompt("Ubah Judul:", oldTitle);
+  if (newTitle === null) return; // cancel
+  const newBody = prompt("Ubah Isi:", oldBody);
+  if (newBody === null) return;
+
+  const { error } = await supabase.from("notes").update({ title: newTitle, body: newBody }).eq("id", id);
+  if (error) alert("Gagal update: " + error.message);
+  else await loadNotes();
+};
+
+// logout
+document.getElementById("logout").onclick = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "index.html";
+};
+</script>
+</body>
+</html>
